@@ -1,1 +1,1 @@
-# aoc
+# advent-of-code stuff
