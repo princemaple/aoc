@@ -80,27 +80,25 @@ defmodule P2 do
         end
       end)
 
-    if winners =
-         Enum.filter(boards, fn {_map, coords, _} ->
-           [Enum.group_by(coords, &elem(&1, 0)), Enum.group_by(coords, &elem(&1, 1))]
-           |> Enum.any?(fn map ->
-             Enum.any?(map, fn {_, v} -> length(v) == 5 end)
-           end)
-         end) do
-      if length(winners) == 1 and (length(boards) == 1 or length(numbers) == 0) do
-        {map, _, ns} = List.first(winners)
+    winners =
+      Enum.filter(boards, fn {_map, coords, _} ->
+        [Enum.group_by(coords, &elem(&1, 0)), Enum.group_by(coords, &elem(&1, 1))]
+        |> Enum.any?(fn map ->
+          Enum.any?(map, fn {_, v} -> length(v) == 5 end)
+        end)
+      end)
 
-        map
-        |> Map.keys()
-        |> Kernel.--(ns |> Enum.to_list() |> IO.inspect(label: "ns"))
-        |> Enum.sum()
-        |> IO.inspect(label: "sum")
-        |> Kernel.*(n)
-      else
-        calc(boards -- winners, numbers)
-      end
+    if match?(^winners, boards) do
+      {map, _, ns} = List.first(boards)
+
+      map
+      |> Map.keys()
+      |> Kernel.--(ns |> Enum.to_list() |> IO.inspect(label: "ns"))
+      |> Enum.sum()
+      |> IO.inspect(label: "sum")
+      |> Kernel.*(n)
     else
-      calc(boards, numbers)
+      calc(boards -- winners, numbers)
     end
   end
 end
