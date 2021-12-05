@@ -54,4 +54,30 @@ defmodule P2 do
   end
 end
 
-P2.calc(data)
+# P2.calc(data)
+
+# ── P2 Memory efficient version ──
+
+defmodule P2ME do
+  def calc(data) do
+    data
+    |> Enum.map(fn [[x1, y1], [x2, y2]] ->
+      cond do
+        x1 == x2 ->
+          Stream.map(y1..y2, &{x1, &1})
+
+        y1 == y2 ->
+          Stream.map(x1..x2, &{&1, y1})
+
+        true ->
+          Stream.zip(x1..x2, y1..y2)
+      end
+    end)
+    |> Stream.concat()
+    |> Enum.frequencies()
+    |> Enum.filter(fn {_k, v} -> v >= 2 end)
+    |> length
+  end
+end
+
+P2ME.calc(data)
