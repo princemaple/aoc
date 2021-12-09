@@ -56,7 +56,6 @@ defmodule P2 do
     |> Enum.map(&elem(&1, 1))
     |> Enum.frequencies()
     |> Map.values()
-    |> Enum.map(&Kernel.+(&1, 1))
     |> Enum.sort()
     |> Enum.take(-3)
     |> Enum.product()
@@ -68,7 +67,7 @@ defmodule P2 do
         {dest, path}
 
       coords in lps ->
-        {coords, path}
+        {coords, Map.put(path, coords, coords)}
 
       true ->
         low =
