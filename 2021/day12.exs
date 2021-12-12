@@ -43,9 +43,7 @@ end
 P1.calc("start", data, [])
 
 defmodule P2 do
-  def calc(from, data, seen, exception, path) do
-    next = data[from]
-
+  def calc(from, data, seen, exception) do
     seen =
       if match?(<<c::8, _::binary>> when c in ?a..?z, from) do
         [from | seen]
@@ -53,24 +51,20 @@ defmodule P2 do
         seen
       end
 
+    exception = exception && Enum.count_until(seen, &(&1 == from), 2) <= 1
+    next = data[from] -- if(exception, do: [], else: seen)
+
     next
-    |> Kernel.--(seen)
-    |> Enum.each(fn
-      "end" ->
-        Agent.update(P2, &MapSet.put(&1, [from | path]))
+    |> Kernel.|>(
+      Enum.reduce(0, fn
+        "end", sum ->
+          sum + 1
 
-      next ->
-        calc(next, data, seen, exception, [from | path])
-
-        if is_nil(exception) and match?([^from | _], seen) do
-          [^from | seen] = seen
-          calc(next, data, seen, from, [from | path])
-        end
-    end)
+        next, sum ->
+          sum + calc(next, data, seen, exception)
+      end)
+    )
   end
 end
 
-Agent.start(fn -> MapSet.new() end, name: P2)
-P2.calc("start", data, [], nil, [])
-IO.inspect(Agent.get(P2, &MapSet.size/1))
-Agent.stop(P2)
+P2.calc("start", data, [], true)
