@@ -71,16 +71,13 @@ defmodule P2 do
     exception = exception && Enum.count_until(seen, &(&1 == from), 2) <= 1
     next = data[from] -- if(exception, do: [], else: seen)
 
-    next
-    |> Kernel.|>(
-      Enum.reduce(0, fn
-        "end", sum ->
-          sum + 1
+    Enum.reduce(next, 0, fn
+      "end", sum ->
+        sum + 1
 
-        next, sum ->
-          sum + calc(next, data, seen, exception)
-      end)
-    )
+      next, sum ->
+        sum + calc(next, data, seen, exception)
+    end)
   end
 end
 ```
