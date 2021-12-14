@@ -52,7 +52,9 @@ end
 defmodule P2 do
   def step(data, map) do
     data
-    |> Enum.map(fn {<<c1, c2>> = k, v} -> [{<<c1>> <> map[k], v}, {map[k] <> <<c2>>, v}] end)
+    |> Enum.map(fn {<<c1, c2>> = k, v} ->
+      [{<<c1>> <> map[k], v}, {map[k] <> <<c2>>, v}]
+    end)
     |> List.flatten()
     |> Enum.group_by(&elem(&1, 0))
     |> Map.new(fn {k, v} -> {k, v |> Enum.map(&elem(&1, 1)) |> Enum.sum()} end)
@@ -74,11 +76,9 @@ end
 |> then(fn map ->
   [{<<c, _>>, n} | rest] = Enum.to_list(map)
 
-  rest
-  |> Enum.reduce(%{}, fn {<<_, c>>, n}, acc ->
+  Enum.reduce(rest, %{<<c>> => n}, fn {<<_, c>>, n}, acc ->
     Map.update(acc, <<c>>, n, &(&1 + n))
   end)
-  |> Map.update(<<c>>, n, &(&1 + n))
 end)
 |> Map.values()
 |> Enum.min_max()
