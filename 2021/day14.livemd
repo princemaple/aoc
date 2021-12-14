@@ -1,0 +1,86 @@
+# Day14
+
+## Untitled
+
+<!-- livebook:{"livebook_object":"cell_input","name":"input","type":"textarea","value":"PKHOVVOSCNVHHCVVCBOH\n\nNO -> B\nPV -> P\nOC -> K\nSC -> K\nFK -> P\nPO -> P\nFC -> V\nKN -> V\nCN -> O\nCB -> K\nNF -> K\nCO -> F\nSK -> F\nVO -> B\nSF -> F\nPB -> F\nFF -> C\nHC -> P\nPF -> B\nOP -> B\nOO -> V\nOK -> N\nKB -> H\nPN -> V\nPP -> N\nFV -> S\nBO -> O\nHN -> C\nFP -> F\nBP -> B\nHB -> N\nVC -> F\nPC -> V\nFO -> O\nOH -> S\nFH -> B\nHK -> B\nBC -> F\nON -> K\nFN -> N\nNN -> O\nPH -> P\nKS -> H\nHV -> F\nBK -> O\nNP -> S\nCC -> H\nKV -> V\nNB -> C\nNS -> S\nKO -> V\nNK -> H\nHO -> C\nKC -> P\nVH -> C\nVK -> O\nCP -> K\nBS -> N\nBB -> F\nVV -> K\nSH -> O\nSO -> N\nVF -> K\nNV -> K\nSV -> O\nNH -> C\nVS -> N\nOF -> N\nSP -> C\nHP -> O\nNC -> V\nKP -> B\nKH -> O\nSN -> S\nCS -> N\nFB -> P\nOB -> H\nVP -> B\nCH -> O\nBF -> B\nPK -> S\nCF -> V\nCV -> S\nVB -> P\nCK -> H\nPS -> N\nSS -> C\nOS -> P\nOV -> F\nVN -> V\nBV -> V\nHF -> B\nFS -> O\nBN -> K\nSB -> N\nHH -> S\nBH -> S\nKK -> H\nHS -> K\nKF -> V\n"} -->
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+[data, map] =
+  "input"
+  |> IO.getn(1_000_000)
+  |> String.trim()
+  |> String.split(["\n\n", "\r\n\r\n"], trim: true)
+
+data = String.split(data, "", trim: true)
+
+map =
+  map
+  |> String.split(["\n", "\r\n"], trim: true)
+  |> Enum.map(&String.split(&1, " -> "))
+  |> Enum.map(fn [template, insert] -> {template, insert} end)
+  |> Map.new()
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule P1 do
+  def step([char1, char2 | rest], map) do
+    [char1, map[char1 <> char2] | step([char2 | rest], map)]
+  end
+
+  def step([char], _map), do: [char]
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+1..10
+|> Enum.reduce(data, fn _, data -> P1.step(data, map) end)
+|> Enum.frequencies()
+|> Map.values()
+|> Enum.min_max()
+|> then(fn {min, max} -> max - min end)
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule P2 do
+  def step(data, map) do
+    data
+    |> Enum.map(fn {<<c1, c2>> = k, v} -> [{<<c1>> <> map[k], v}, {map[k] <> <<c2>>, v}] end)
+    |> List.flatten()
+    |> Enum.group_by(&elem(&1, 0))
+    |> Map.new(fn {k, v} -> {k, v |> Enum.map(&elem(&1, 1)) |> Enum.sum()} end)
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+1..40
+|> Enum.reduce(
+  data
+  |> Enum.chunk_every(2, 1, :discard)
+  |> Enum.map(fn [c1, c2] -> c1 <> c2 end)
+  |> Enum.frequencies(),
+  fn _, data -> P2.step(data, map) end
+)
+|> then(fn map ->
+  [{<<c, _>>, n} | rest] = Enum.to_list(map)
+
+  rest
+  |> Enum.reduce(%{}, fn {<<_, c>>, n}, acc ->
+    Map.update(acc, <<c>>, n, &(&1 + n))
+  end)
+  |> Map.update(<<c>>, n, &(&1 + n))
+end)
+|> Map.values()
+|> Enum.min_max()
+|> then(fn {min, max} -> max - min end)
+```
