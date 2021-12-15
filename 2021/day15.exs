@@ -40,32 +40,18 @@ defmodule D15 do
     max = grid |> Map.keys() |> Enum.max()
 
     Stream.iterate(
-      {
-        {{0, 0}, 0, PriorityQueue.new(), %{{0, 0} => 0}},
-        {max, grid[max], PriorityQueue.new(), %{max => grid[max]}}
-      },
-      fn {{p1, r1, q1, s1} = t1, {p2, r2, q2, s2} = t2} ->
-        if r1 <= r2 do
-          {D15.walk(p1, r1, q1, s1, grid), t2}
-        else
-          {t1, D15.walk(p2, r2, q2, s2, grid)}
-        end
+      {{0, 0}, 0, PriorityQueue.new(), %{{0, 0} => 0}},
+      fn {next, risk, q, seen} ->
+        D15.walk(next, risk, q, seen, grid)
       end
     )
     |> Stream.drop_while(fn
-      {{p1, _, _, seen1}, {p2, _, _, seen2}} ->
-        not (is_map_key(seen2, p1) or is_map_key(seen1, p2))
+      {^max, _, _, _} -> false
+      _ -> true
     end)
     |> Enum.take(1)
     |> List.first()
-    |> then(fn
-      {{p1, risk1, _, seen1}, {p2, risk2, _, seen2}} ->
-        if is_map_key(seen1, p2) do
-          seen1[p2] + risk2 - grid[p2]
-        else
-          seen2[p1] + risk1 - grid[p1]
-        end
-    end)
+    |> elem(1)
     |> IO.inspect()
   end
 
