@@ -52,10 +52,9 @@ end
 defmodule P2 do
   def step(data, map) do
     data
-    |> Enum.map(fn {<<c1, c2>> = k, v} ->
+    |> Enum.flat_map(fn {<<c1, c2>> = k, v} ->
       [{<<c1>> <> map[k], v}, {map[k] <> <<c2>>, v}]
     end)
-    |> List.flatten()
     |> Enum.group_by(&elem(&1, 0))
     |> Map.new(fn {k, v} -> {k, v |> Enum.map(&elem(&1, 1)) |> Enum.sum()} end)
   end
