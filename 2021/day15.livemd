@@ -60,8 +60,7 @@ defmodule D15 do
       {^max, _, _, _} -> false
       _ -> true
     end)
-    |> Enum.take(1)
-    |> List.first()
+    |> Enum.at(0)
     |> elem(1)
     |> IO.inspect()
   end
