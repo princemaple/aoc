@@ -1,4 +1,4 @@
-# Title: Day12
+# Title: Day16
 
 # ── Untitled ──
 
@@ -17,14 +17,10 @@ data =
 
 defmodule D16 do
   def parse(data) do
-    if Enum.uniq(data) == [0] do
-      {{[], []}, nil}
-    else
-      {data, %{}}
-      |> parse_meta(:version)
-      |> parse_meta(:type)
-      |> parse_by_type()
-    end
+    {data, %{}}
+    |> parse_meta(:version)
+    |> parse_meta(:type)
+    |> parse_by_type()
   end
 
   def parse_meta({[a, b, c | rest], meta}, meta_key) do
