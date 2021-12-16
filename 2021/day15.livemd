@@ -32,28 +32,27 @@ grid =
 defmodule D15 do
   @offsets [{-1, 0}, {1, 0}, {0, -1}, {0, 1}]
 
-  def walk({row, col}, r, q, seen, grid) do
-    {q, seen} =
+  def walk({row, col}, r, q, grid) do
+    {q, grid} =
       @offsets
       |> Enum.map(fn {dr, dc} -> {row + dr, col + dc} end)
       |> Enum.map(&{&1, grid[&1]})
-      |> Enum.reject(&Map.has_key?(seen, elem(&1, 0)))
       |> Enum.reject(&is_nil(elem(&1, 1)))
-      |> Enum.reduce({q, seen}, fn {pos, risk}, {q, seen} ->
-        {PriorityQueue.put(q, risk + r, pos), Map.put(seen, pos, risk + r)}
+      |> Enum.reduce({q, grid}, fn {pos, risk}, {q, grid} ->
+        {PriorityQueue.put(q, risk + r, pos), Map.delete(grid, pos)}
       end)
 
     {{risk, next}, q} = PriorityQueue.pop(q)
-    {next, risk, q, seen}
+    {next, risk, q, grid}
   end
 
   def solve1(grid) do
     max = grid |> Map.keys() |> Enum.max()
 
     Stream.iterate(
-      {{0, 0}, 0, PriorityQueue.new(), %{{0, 0} => 0}},
-      fn {next, risk, q, seen} ->
-        D15.walk(next, risk, q, seen, grid)
+      {{0, 0}, 0, PriorityQueue.new(), Map.delete(grid, {0, 0})},
+      fn {next, risk, q, grid} ->
+        D15.walk(next, risk, q, grid)
       end
     )
     |> Stream.drop_while(fn
