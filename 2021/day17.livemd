@@ -1,6 +1,6 @@
 # Day17
 
-## P1
+## Untitled
 
 <!-- livebook:{"livebook_object":"cell_input","name":"input","type":"textarea","value":"target area: x=175..227, y=-134..-79\n"} -->
 

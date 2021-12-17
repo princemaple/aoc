@@ -1,6 +1,6 @@
 # Title: Day17
 
-# ── P1 ──
+# ── Untitled ──
 
 data =
   "input"
