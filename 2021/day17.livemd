@@ -28,11 +28,19 @@ defmodule D17 do
     dxmin = 1..xmin |> Enum.find(&(Enum.sum(1..&1) >= xmin))
 
     Enum.reduce(dxmin..xmax, [], fn dx, acc ->
-      Enum.reduce(ymin..200, acc, fn dy, acc ->
-        Stream.iterate({{0, 0}, {dx, dy}}, fn {{x, y}, {dx, dy}} ->
+      Enum.reduce(ymin..-ymin, acc, fn dy, acc ->
+        {dx_h0, x, dy_h0} =
+          if dy > 0 do
+            dx_h1 = dx - dy * 2
+            {max(dx_h1 - 1, 0), Enum.sum(max(dx_h1, 1)..dx), -dy - 1}
+          else
+            {dx, 0, dy}
+          end
+
+        Stream.iterate({{x, 0}, {dx_h0, dy_h0}}, fn {{x, y}, {dx, dy}} ->
           {{x + dx, y + dy}, {(dx > 0 && dx - 1) || ((dx < 0 && dx + 1) || dx), dy - 1}}
         end)
-        |> Stream.drop_while(fn {{x, y}, {dx, dy}} ->
+        |> Stream.drop_while(fn {{x, y}, {dx, _dy}} ->
           (x < xmin and dx > 0) or y > ymax
         end)
         |> Stream.take_while(fn {{x, y}, _} ->
