@@ -31,7 +31,7 @@ defmodule D20 do
     field = count - 1 &&& alg[0]
     {{min_row, min_col}, {max_row, max_col}} = pic |> Map.keys() |> Enum.min_max()
 
-    for row <- (min_row - 3)..(max_row + 3), col <- (min_col - 3)..(max_col + 3), into: new_pic do
+    for row <- (min_row - 2)..(max_row + 2), col <- (min_col - 2)..(max_col + 2), into: new_pic do
       {row, col}
       |> neighbours
       |> Enum.map(&Map.get(pic, &1, field))
