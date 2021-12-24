@@ -1,0 +1,141 @@
+# Day23
+
+## Untitled
+
+<!-- livebook:{"livebook_object":"cell_input","name":"input","type":"textarea","value":"#############\n#...........#\n###B#B#D#A###\n  #C#A#D#C#\n  #########\n"} -->
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+data =
+  "input"
+  |> IO.getn(1_000_000)
+  |> String.trim()
+  |> String.split(["\r\n", "\n"], trim: true)
+  |> Enum.split(2)
+  |> then(fn {[_, hallway], rooms} ->
+    hallway =
+      (Regex.scan(~r/\./, hallway, return: :index)
+       |> Enum.map(fn [{i, _}] -> {{0, i}, nil} end)) --
+        ([3, 5, 7, 9]
+         |> Enum.map(fn i -> {{0, i}, nil} end))
+
+    rooms =
+      rooms
+      |> Enum.drop(-1)
+      |> Enum.with_index(1)
+      |> Enum.map(fn {rooms, row} ->
+        Regex.scan(~r/[A-D]/, rooms)
+        |> Enum.zip([3, 5, 7, 9])
+        |> Enum.map(fn {[type], col} -> {{row, col}, {type, false}} end)
+      end)
+      |> List.update_at(-1, fn rooms ->
+        Enum.map(rooms, fn {{row, col}, {type, false}} ->
+          if {col, type} in [{3, "A"}, {5, "B"}, {7, "C"}, {9, "D"}] do
+            {{row, col}, {type, true}}
+          else
+            {{row, col}, {type, false}}
+          end
+        end)
+      end)
+      |> List.flatten()
+
+    hallway ++ rooms
+  end)
+  |> Map.new()
+```
+
+```elixir
+defmodule D23 do
+  @weight %{"A" => 1, "B" => 10, "C" => 100, "D" => 1000}
+  @col %{"A" => 3, "B" => 5, "C" => 7, "D" => 9}
+
+  def search(map, rc, cost, min_cost, seen) do
+    shrimps = Enum.reject(map, &is_nil(elem(&1, 1)))
+    shrimps_tuple = shrimps |> Enum.sort() |> List.to_tuple()
+    all_done? = Enum.all?(shrimps, &match?({_, {_, true}}, &1))
+
+    cond do
+      all_done? ->
+        {seen, cost}
+
+      cost > min_cost ->
+        {seen, :infinity}
+
+      (found = seen[shrimps_tuple]) && elem(found, 0) <= cost ->
+        {seen, seen[shrimps_tuple]}
+
+      true ->
+        hallway = Enum.filter(map, &match?({{0, _}, _}, &1))
+
+        out_options =
+          shrimps
+          |> Enum.filter(fn {{row, col}, {_type, done?}} ->
+            not done? && row > 0 &&
+              (row == 1 or
+                 Enum.all?(1..(row - 1)//1, fn r -> !map[{r, col}] end))
+          end)
+          |> Enum.map(fn {{_row, col} = coords, {type, _done?}} ->
+            {{coords, {type, false}},
+             hallway
+             |> Enum.filter(fn
+               {{_, hw_col}, nil} -> Enum.all?(hw_col..col, &(!map[{0, &1}]))
+               _ -> false
+             end)
+             |> Enum.map(&elem(&1, 0))}
+          end)
+
+        in_options =
+          shrimps
+          |> Enum.filter(fn {{row, col}, {type, _done?}} ->
+            row == 0 &&
+              Enum.count_until(col..@col[type], &map[{0, &1}], 2) == 1 &&
+              Enum.all?(1..rc, &(map[{&1, @col[type]}] in [nil, {type, true}]))
+          end)
+          |> Enum.map(fn {coords, {type, _done?}} ->
+            {{coords, {type, true}},
+             rc..1//-1
+             |> Enum.map(&{&1, @col[type]})
+             |> Enum.drop_while(&map[&1])
+             |> Enum.take(1)}
+          end)
+
+        (out_options ++ in_options)
+        |> Enum.flat_map(fn {s, l} -> Stream.map(l, fn x -> {s, x} end) end)
+        |> Enum.reduce({seen, min_cost}, fn
+          {{{from_row, from_col} = from, {type, _done?} = shrimp}, {to_row, to_col} = to},
+          {seen, min_cost} ->
+            {seen, route_cost} =
+              search(
+                map |> Map.put(from, nil) |> Map.put(to, shrimp),
+                rc,
+                @weight[type] * (abs(from_row - to_row) + abs(from_col - to_col)) + cost,
+                min_cost,
+                seen
+              )
+
+            {seen, min(min_cost, route_cost)}
+        end)
+        |> then(fn {seen, min_cost} ->
+          {Map.put(seen, shrimps_tuple, {cost, min_cost}), min_cost}
+        end)
+    end
+  end
+end
+```
+
+<!-- livebook:{"branch_parent_index":0} -->
+
+## P1
+
+```elixir
+D23.search(data, 2, 0, :infinity, %{}) |> elem(1)
+```
+
+<!-- livebook:{"branch_parent_index":0} -->
+
+## P2
+
+```elixir
+D23.search(data, 4, 0, :infinity, %{}) |> elem(1)
+```
