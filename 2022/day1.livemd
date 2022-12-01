@@ -54,13 +54,6 @@ text
 |> split("\n\n")
 |> Enum.map(&split(&1, "\n"))
 |> to_numbers()
-```
-
-```elixir
-text
-|> split("\n\n")
-|> Enum.map(&split(&1, "\n"))
-|> to_numbers()
 |> Enum.map(&Enum.sum/1)
 |> Enum.max()
 ```
