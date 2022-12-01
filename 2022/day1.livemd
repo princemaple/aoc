@@ -1,0 +1,77 @@
+# AoC template
+
+```elixir
+Mix.install([:kino])
+```
+
+## Section
+
+```elixir
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+
+import Utils
+```
+
+```elixir
+text
+|> split("\n\n")
+|> Enum.map(&split(&1, "\n"))
+|> to_numbers()
+```
+
+```elixir
+text
+|> split("\n\n")
+|> Enum.map(&split(&1, "\n"))
+|> to_numbers()
+|> Enum.map(&Enum.sum/1)
+|> Enum.max()
+```
+
+```elixir
+text
+|> split("\n\n")
+|> Enum.map(&split(&1, "\n"))
+|> to_numbers()
+|> Enum.map(&Enum.sum/1)
+|> Enum.sort()
+|> Enum.take(-3)
+|> Enum.sum()
+```
