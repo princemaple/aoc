@@ -2,11 +2,7 @@
 
 ```elixir
 Mix.install([:kino])
-```
 
-## Section
-
-```elixir
 defmodule Utils do
   def split(line, sep \\ "") do
     String.split(line, sep, trim: true)
@@ -39,14 +35,18 @@ defmodule Utils do
 end
 ```
 
+## Setup
+
+```elixir
+import Utils
+```
+
 ```elixir
 input = Kino.Input.textarea("Input:")
 ```
 
 ```elixir
 text = Kino.Input.read(input)
-
-import Utils
 ```
 
 ```elixir

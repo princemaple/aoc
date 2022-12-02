@@ -2,11 +2,7 @@
 
 ```elixir
 Mix.install([:kino])
-```
 
-## Setup
-
-```elixir
 defmodule Utils do
   def split(line, sep \\ "") do
     String.split(line, sep, trim: true)
@@ -38,6 +34,8 @@ defmodule Utils do
   end
 end
 ```
+
+## Setup
 
 ```elixir
 import Utils
