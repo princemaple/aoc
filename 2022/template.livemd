@@ -1,10 +1,10 @@
-# AoC template
+# AoC 2022 Day X
 
 ```elixir
 Mix.install([:kino])
 ```
 
-## Section
+## Setup
 
 ```elixir
 defmodule Utils do
@@ -50,6 +50,18 @@ input = Kino.Input.textarea("Input:")
 ```elixir
 text = Kino.Input.read(input)
 ```
+
+```elixir
+
+```
+
+## P1
+
+```elixir
+
+```
+
+## P2
 
 ```elixir
 
