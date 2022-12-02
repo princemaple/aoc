@@ -58,14 +58,12 @@ data = split_all_lines(text, " ")
 ## P1
 
 ```elixir
-base_score = %{"X" => 1, "Y" => 2, "Z" => 3}
-
 for [op, me] <- data do
-  base = base_score[me]
   <<op>> = op
   <<me>> = me
   op = op - ?A
   me = me - ?X
+  choice = me + 1
 
   outcome =
     cond do
@@ -74,7 +72,7 @@ for [op, me] <- data do
       true -> 0
     end
 
-  base + outcome
+  choice + outcome
 end
 |> Enum.sum()
 ```
@@ -89,9 +87,9 @@ for [op, ot] <- data do
   ot = ot - ?X
 
   outcome = ot * 3
-  base = rem(op + (ot - 1) + 3, 3) + 1
+  choice = rem(op + (ot - 1) + 3, 3) + 1
 
-  base + outcome
+  choice + outcome
 end
 |> Enum.sum()
 ```
