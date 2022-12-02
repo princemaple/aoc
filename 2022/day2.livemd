@@ -59,14 +59,9 @@ data = split_all_lines(text, " ")
 for [<<op>>, <<me>>] <- data do
   op = op - ?A
   me = me - ?X
-  choice = me + 1
 
-  outcome =
-    cond do
-      op == me -> 3
-      me == rem(op + 1, 3) -> 6
-      true -> 0
-    end
+  choice = me + 1
+  outcome = rem(me - op + 4, 3) * 3
 
   choice + outcome
 end
