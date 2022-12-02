@@ -58,9 +58,7 @@ data = split_all_lines(text, " ")
 ## P1
 
 ```elixir
-for [op, me] <- data do
-  <<op>> = op
-  <<me>> = me
+for [<<op>>, <<me>>] <- data do
   op = op - ?A
   me = me - ?X
   choice = me + 1
@@ -80,9 +78,7 @@ end
 ## P2
 
 ```elixir
-for [op, ot] <- data do
-  <<op>> = op
-  <<ot>> = ot
+for [<<op>>, <<ot>>] <- data do
   op = op - ?A
   ot = ot - ?X
 
