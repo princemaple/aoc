@@ -1,0 +1,97 @@
+# AoC 2022 Day 2
+
+```elixir
+Mix.install([:kino])
+```
+
+## Section
+
+```elixir
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data = split_all_lines(text, " ")
+```
+
+## P1
+
+```elixir
+base_score = %{"X" => 1, "Y" => 2, "Z" => 3}
+
+for [op, me] <- data do
+  base = base_score[me]
+  <<op>> = op
+  <<me>> = me
+  op = op - ?A
+  me = me - ?X
+
+  outcome =
+    cond do
+      op == me -> 3
+      me == rem(op + 1, 3) -> 6
+      true -> 0
+    end
+
+  base + outcome
+end
+|> Enum.sum()
+```
+
+## P2
+
+```elixir
+for [op, ot] <- data do
+  <<op>> = op
+  <<ot>> = ot
+  op = op - ?A
+  ot = ot - ?X
+
+  outcome = ot * 3
+  base = rem(op + (ot - 1) + 3, 3) + 1
+
+  base + outcome
+end
+|> Enum.sum()
+```
