@@ -1,0 +1,42 @@
+# AoC 2016 Day 19
+
+## Setup
+
+```elixir
+example = 5
+live = 3_014_387
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def solve(n), do: recur(n, 1, 1)
+
+  defp recur(1, h, _) do
+    h
+  end
+
+  defp recur(n, h, r) when rem(n, 2) == 1 do
+    recur(div(n, 2), h + 2 ** r, r + 1)
+  end
+
+  defp recur(n, h, r) when rem(n, 2) == 0 do
+    recur(div(n, 2), h, r + 1)
+  end
+end
+```
+
+```elixir
+P1.solve(live)
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(n) do
+    recur(n, )
+  end
+end
+```
