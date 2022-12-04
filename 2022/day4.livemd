@@ -1,4 +1,4 @@
-# AoC 2022 Day 3
+# AoC 2022 Day 4
 
 ```elixir
 Mix.install([:kino])
@@ -50,32 +50,27 @@ text = Kino.Input.read(input)
 ```
 
 ```elixir
-data = split_all_lines(text, "")
+data = split_all_lines(text, [",", "-"])
 ```
 
 ## P1
 
 ```elixir
-for rack <- data do
-  [l, r] = rack |> Enum.chunk_every(length(rack) |> div(2))
-  [<<item>>] = Enum.uniq(l -- l -- r)
-  v = item - ?a + 1
-  if v < 0, do: v + ?a - ?A + 26, else: v
+for row <- data do
+  [f1, t1, f2, t2] = Enum.map(row, &String.to_integer/1)
+  (f1 <= f2 and t1 >= t2) or (f1 >= f2 and t1 <= t2)
 end
-|> Enum.sum()
+|> Enum.count(& &1)
 ```
 
 ## P2
 
 ```elixir
-for group <- Enum.chunk_every(data, 3) do
-  Enum.map(group, &MapSet.new/1)
-  |> Enum.reduce(&MapSet.intersection/2)
-  |> Enum.to_list()
-  |> then(fn [<<item>>] ->
-    v = item - ?a + 1
-    if v < 0, do: v + ?a - ?A + 26, else: v
-  end)
+for row <- data do
+  [f1, t1, f2, t2] = Enum.map(row, &String.to_integer/1)
+  r1 = f1..t1
+  r2 = f2..t2
+  !Range.disjoint?(r1, r2)
 end
-|> Enum.sum()
+|> Enum.count(& &1)
 ```
