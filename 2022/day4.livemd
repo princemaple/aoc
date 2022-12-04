@@ -68,9 +68,7 @@ end
 ```elixir
 for row <- data do
   [f1, t1, f2, t2] = Enum.map(row, &String.to_integer/1)
-  r1 = f1..t1
-  r2 = f2..t2
-  !Range.disjoint?(r1, r2)
+  !Range.disjoint?(f1..t1, f2..t2)
 end
 |> Enum.count(& &1)
 ```
