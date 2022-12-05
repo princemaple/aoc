@@ -1,0 +1,137 @@
+# AoC 2022 Day 5
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+[setup, moves] = split(text, "\n\n")
+
+moves =
+  for move <- split(moves, "\n") do
+    Regex.scan(~r/\d+/, move)
+    |> Enum.flat_map(& &1)
+    |> Enum.map(&to_numbers/1)
+  end
+
+setup =
+  setup
+  |> split("\n")
+  |> Enum.drop(-1)
+  |> Enum.map(&String.split(&1, "", trim: true))
+  |> Enum.map(&Enum.chunk_every(&1, 4))
+
+setup =
+  for row <- setup do
+    for cell <- row do
+      case cell do
+        ["[", char, "]" | _] -> char
+        _ -> nil
+      end
+    end
+  end
+  |> Enum.zip()
+  |> Enum.map(&Tuple.to_list/1)
+  |> Enum.map(fn chars -> Enum.reject(chars, &is_nil/1) end)
+
+setup =
+  for {stack, i} <- Enum.with_index(setup, 1), into: %{} do
+    {i, stack}
+  end
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def solve(setup, moves) do
+    Enum.reduce(moves, setup, fn move, data ->
+      move(data, move)
+    end)
+  end
+
+  defp move(data, [n, from, to]) do
+    do_move(data, n, from, to)
+  end
+
+  defp do_move(data, 0, _from, _to), do: data
+
+  defp do_move(data, n, from, to) do
+    [char | rest] = data[from]
+    do_move(%{data | from => rest, to => [char | data[to]]}, n - 1, from, to)
+  end
+end
+```
+
+```elixir
+result = P1.solve(setup, moves)
+
+1..map_size(result) |> Enum.map(&hd(result[&1])) |> Enum.join() |> IO.puts()
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(setup, moves) do
+    Enum.reduce(moves, setup, fn move, data ->
+      move(data, move)
+    end)
+  end
+
+  defp move(data, [n, from, to]) do
+    %{data | from => Enum.drop(data[from], n), to => Enum.take(data[from], n) ++ data[to]}
+  end
+end
+```
+
+```elixir
+result = P2.solve(setup, moves)
+
+1..map_size(result) |> Enum.map(&hd(result[&1])) |> Enum.join() |> IO.puts()
+```
