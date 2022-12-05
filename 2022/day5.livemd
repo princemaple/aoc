@@ -86,9 +86,7 @@ setup =
 ```elixir
 defmodule P1 do
   def solve(setup, moves) do
-    Enum.reduce(moves, setup, fn move, data ->
-      move(data, move)
-    end)
+    Enum.reduce(moves, setup, &move(&2, &1))
   end
 
   defp move(data, [n, from, to]) do
@@ -115,9 +113,7 @@ result = P1.solve(setup, moves)
 ```elixir
 defmodule P2 do
   def solve(setup, moves) do
-    Enum.reduce(moves, setup, fn move, data ->
-      move(data, move)
-    end)
+    Enum.reduce(moves, setup, &move(&2, &1))
   end
 
   defp move(data, [n, from, to]) do
