@@ -36,7 +36,47 @@ P1.solve(live)
 ```elixir
 defmodule P2 do
   def solve(n) do
-    recur(n, )
+    recur(Enum.to_list(1..n), n, 1, div(n, 3), [], [])
+  end
+
+  defp recur([a, _], _, _, _, [], []), do: a
+
+  defp recur([h | rest], n, index, threshold, done, gone) when index <= threshold do
+    recur(
+      rest,
+      n - 1,
+      index + 1,
+      threshold,
+      [h | done],
+      [index * 2 - 1 + div(n, 2) | gone]
+    )
+  end
+
+  defp recur(rest, n, index, _threshold, done, gone) do
+    recur(
+      flush(rest, index, [], Enum.reverse(gone)) ++ Enum.reverse(done),
+      n,
+      1,
+      div(n, 3),
+      [],
+      []
+    )
+  end
+
+  defp flush([_h | rest], index, done, [index | gone]) do
+    flush(rest, index + 1, done, gone)
+  end
+
+  defp flush([h | rest], index, done, gone) do
+    flush(rest, index + 1, [h | done], gone)
+  end
+
+  defp flush([], _, done, _) do
+    Enum.reverse(done)
   end
 end
+```
+
+```elixir
+P2.solve(live)
 ```
