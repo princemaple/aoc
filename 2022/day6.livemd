@@ -1,0 +1,74 @@
+# AoC 2022 Day 6
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+inputs = split_all_lines(text, "")
+```
+
+## P1
+
+```elixir
+for input <- inputs do
+  Enum.chunk_every(input, 4, 1, :discard)
+  |> Enum.find_index(&(length(Enum.uniq(&1)) == 4))
+  |> Kernel.+(4)
+end
+```
+
+## P2
+
+```elixir
+for input <- inputs do
+  Enum.chunk_every(input, 14, 1, :discard)
+  |> Enum.find_index(&(length(Enum.uniq(&1)) == 14))
+  |> Kernel.+(14)
+end
+```
