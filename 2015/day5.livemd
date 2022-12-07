@@ -1,0 +1,113 @@
+# AoC 2015 Day 5
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+inputs = split(text, "\n")
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  @vowels MapSet.new(~w(a e i o u))
+  @naughty ~w(ab cd pq xy)
+
+  def solve(input) do
+    input = split(input)
+    has3v?(input) && has_dup?(input) && not_naughty?(input)
+  end
+
+  defp has3v?(input) do
+    Stream.filter(input, &(&1 in @vowels)) |> Enum.count_until(3) |> Kernel.>=(3)
+  end
+
+  defp has_dup?(input) do
+    Stream.chunk_every(input, 2, 1, :discard)
+    |> Enum.find_value(fn
+      [a, a] -> true
+      _ -> false
+    end)
+  end
+
+  defp not_naughty?(input) do
+    input = Enum.join(input)
+    !Enum.any?(@naughty, &String.contains?(input, &1))
+  end
+end
+
+for input <- inputs do
+  P1.solve(input)
+end
+|> Enum.count(& &1)
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(input) do
+    has_rep?(input) && has_sandwich?(input)
+  end
+
+  defp has_rep?(input) do
+    input =~ ~r/(..).*?\1/
+  end
+
+  defp has_sandwich?(input) do
+    input =~ ~r/(.).\1/
+  end
+end
+
+for input <- inputs do
+  P2.solve(input)
+end
+|> Enum.count(& &1)
+```
