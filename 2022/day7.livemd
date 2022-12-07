@@ -55,7 +55,7 @@ data = split(text, "\n")
 
 ```elixir
 defmodule P do
-  def cd(p, "/") do
+  def cd(_p, "/") do
     "/"
   end
 
@@ -78,8 +78,8 @@ end
     "$ ls", acc ->
       acc
 
-    "dir " <> _dir, {curr, data} ->
-      {curr, data}
+    "dir " <> _dir, acc ->
+      acc
 
     file, {curr, data} ->
       [size, name] = String.split(file, " ")
