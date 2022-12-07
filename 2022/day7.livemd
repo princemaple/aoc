@@ -1,0 +1,119 @@
+# AoC 2022 Day 7
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data = split(text, "\n")
+```
+
+```elixir
+defmodule P do
+  def cd(p, "/") do
+    "/"
+  end
+
+  def cd(p, "..") do
+    Path.dirname(p)
+  end
+
+  def cd(p, other) do
+    Path.join(p, other)
+  end
+end
+```
+
+```elixir
+{_, data} =
+  Enum.reduce(data, {"", %{}}, fn
+    "$ cd " <> path, {curr, data} ->
+      {P.cd(curr, path), data}
+
+    "$ ls", acc ->
+      acc
+
+    "dir " <> _dir, {curr, data} ->
+      # key = Path.join(curr, dir)
+      # {curr, Map.put_new(data, key, [])}
+      {curr, data}
+
+    file, {curr, data} ->
+      [size, name] = String.split(file, " ")
+      {curr, Map.put(data, Path.join(curr, name), String.to_integer(size))}
+  end)
+```
+
+## P1
+
+```elixir
+sizes =
+  data
+  |> Enum.reduce(%{}, fn {path, size}, sizes ->
+    Stream.iterate(path |> Path.split() |> Enum.reverse() |> Enum.drop(1), &tl/1)
+    |> Enum.take_while(fn p -> p != [] end)
+    |> Enum.reduce(sizes, fn parts, sizes ->
+      Map.update(sizes, Path.join(Enum.reverse(parts)), size, &(&1 + size))
+    end)
+  end)
+
+sizes
+|> Enum.filter(fn {_, v} -> v < 100_000 end)
+|> Enum.map(fn {_k, v} -> v end)
+|> Enum.sum()
+```
+
+## P2
+
+```elixir
+total = sizes["/"]
+
+Enum.filter(sizes, fn {_p, v} -> total - v < 40_000_000 end)
+|> Enum.map(fn {_k, v} -> v end)
+|> Enum.min()
+```
