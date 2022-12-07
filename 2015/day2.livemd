@@ -1,4 +1,4 @@
-# AoC 2015 Day 1
+# AoC 2015 Day 2
 
 ```elixir
 Mix.install([:kino])
