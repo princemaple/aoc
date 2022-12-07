@@ -79,8 +79,6 @@ end
       acc
 
     "dir " <> _dir, {curr, data} ->
-      # key = Path.join(curr, dir)
-      # {curr, Map.put_new(data, key, [])}
       {curr, data}
 
     file, {curr, data} ->
