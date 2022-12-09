@@ -110,7 +110,7 @@ defmodule P2 do
           end
         end)
 
-      {head, tails, MapSet.put(s, IO.inspect(List.last(tails)))}
+      {head, tails, MapSet.put(s, List.last(tails))}
     end)
   end
 
