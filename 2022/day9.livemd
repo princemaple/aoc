@@ -1,0 +1,132 @@
+# AoC 2022 Day 9
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data = text |> split_all_lines(" ") |> Enum.map(fn [d, l] -> {d, String.to_integer(l)} end)
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def move(head, tail, {d, l}, s) do
+    Enum.reduce(1..l, {head, tail, s}, fn _, {head, {xt, yt} = tail, s} ->
+      head = {xh, yh} = do_move(head, d)
+
+      tail =
+        cond do
+          abs(xh - xt) > 1 -> {xt + if(xh > xt, do: 1, else: -1), yh}
+          abs(yh - yt) > 1 -> {xh, yt + if(yh > yt, do: 1, else: -1)}
+          true -> tail
+        end
+
+      {head, tail, MapSet.put(s, tail)}
+    end)
+  end
+
+  defp do_move({x, y}, "D"), do: {x, y - 1}
+  defp do_move({x, y}, "U"), do: {x, y + 1}
+  defp do_move({x, y}, "L"), do: {x - 1, y}
+  defp do_move({x, y}, "R"), do: {x + 1, y}
+end
+
+Enum.reduce(data, {{0, 0}, {0, 0}, MapSet.new([{0, 0}])}, fn instr, {h, t, s} ->
+  P1.move(h, t, instr, s)
+end)
+|> elem(2)
+|> MapSet.size()
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def move(head, tails, {d, l}, s) do
+    Enum.reduce(1..l, {head, tails, s}, fn _, {head, tails, s} ->
+      head = do_move(head, d)
+
+      tails =
+        Enum.scan(tails, head, fn {xt, yt} = tail, {xh, yh} ->
+          cond do
+            abs(xh - xt) == 2 && abs(yh - yt) == 2 ->
+              {xt + if(xh > xt, do: 1, else: -1), yt + if(yh > yt, do: 1, else: -1)}
+
+            abs(xh - xt) > 1 ->
+              {xt + if(xh > xt, do: 1, else: -1), yh}
+
+            abs(yh - yt) > 1 ->
+              {xh, yt + if(yh > yt, do: 1, else: -1)}
+
+            true ->
+              tail
+          end
+        end)
+
+      {head, tails, MapSet.put(s, IO.inspect(List.last(tails)))}
+    end)
+  end
+
+  defp do_move({x, y}, "D"), do: {x, y - 1}
+  defp do_move({x, y}, "U"), do: {x, y + 1}
+  defp do_move({x, y}, "L"), do: {x - 1, y}
+  defp do_move({x, y}, "R"), do: {x + 1, y}
+end
+
+Enum.reduce(
+  data,
+  {{0, 0}, List.duplicate({0, 0}, 9), MapSet.new([{0, 0}])},
+  fn instr, {h, ts, s} ->
+    P2.move(h, ts, instr, s)
+  end
+)
+|> elem(2)
+|> MapSet.size()
+```
