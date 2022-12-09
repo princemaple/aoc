@@ -130,3 +130,17 @@ Enum.reduce(
 |> elem(2)
 |> MapSet.size()
 ```
+
+## Using P2 on P1
+
+```elixir
+Enum.reduce(
+  data,
+  {{0, 0}, List.duplicate({0, 0}, 1), MapSet.new([{0, 0}])},
+  fn instr, {h, ts, s} ->
+    P2.move(h, ts, instr, s)
+  end
+)
+|> elem(2)
+|> MapSet.size()
+```
