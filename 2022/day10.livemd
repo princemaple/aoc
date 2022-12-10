@@ -68,9 +68,7 @@ defmodule P1 do
       :noop, {acc, s} -> {[[s] | acc], s}
       {:addx, n}, {acc, s} -> {[[s, s] | acc], s + n}
     end)
-    |> then(fn {acc, done} ->
-      [[done] | acc]
-    end)
+    |> elem(0)
     |> Enum.reverse()
     |> List.flatten()
   end
