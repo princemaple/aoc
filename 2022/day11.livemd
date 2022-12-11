@@ -126,34 +126,7 @@ Enum.reduce(1..20, data, fn _, data -> P1.run(data) end)
 
 ```elixir
 defmodule P2 do
-  @primes [
-    2,
-    3,
-    5,
-    7,
-    11,
-    13,
-    17,
-    19,
-    23,
-    29,
-    31,
-    37,
-    41,
-    43,
-    47,
-    53,
-    59,
-    61,
-    67,
-    71,
-    73,
-    79,
-    83,
-    89,
-    97
-  ]
-  def run(data) do
+  def run(data, div_product) do
     Enum.reduce(0..(map_size(data) - 1), data, fn id, data ->
       %{
         items: items,
@@ -167,22 +140,13 @@ defmodule P2 do
 
       items =
         Enum.map(items, fn item ->
-          case change do
-            {:+, _, [{:old, _, _}, n]} ->
-              %{item | const: item.const + n}
-
-            {:*, _, [{:old, _, _}, {:old, _, _}]} ->
-              item = Map.new(item, fn {key, val} -> {key, val + val} end)
-              factors_map(item.const)
-
-            {:*, _, [{:old, _, _}, n]} ->
-              Map.update(item, n, 1, &(&1 + 1))
-          end
+          {new, _} = Code.eval_string(change, old: item)
+          rem(new, div_product)
         end)
 
       data =
         Enum.reduce(items, data, fn item, data ->
-          if rem(item.const, div_by) == 0 && (Map.get(item, div_by, 0) > 0 || map_size(item) == 1) do
+          if rem(item, div_by) == 0 do
             update_in(data, [true_to, :items], &[item | &1])
           else
             update_in(data, [false_to, :items], &[item | &1])
@@ -192,47 +156,14 @@ defmodule P2 do
       update_in(data, [id, :items], fn _ -> [] end)
     end)
   end
-
-  def factors_map(item) do
-    {factors, remainder} = P2.factors(item, @primes, [])
-
-    factors
-    |> Enum.frequencies()
-    |> Map.put(:const, remainder)
-  end
-
-  def factors(1, _, acc), do: {acc, 0}
-  def factors(n, [], acc), do: {acc, n}
-
-  def factors(n, [p | ps], acc) do
-    if rem(n, p) == 0 do
-      factors(div(n, p), [p | ps], [p | acc])
-    else
-      factors(n, ps, acc)
-    end
-  end
 end
 
-data =
-  data
-  |> Map.new(fn {key, val} ->
-    {:ok, {:=, _, [{:new, _, nil}, change]}} = Code.string_to_quoted(val.change)
+div_product = data |> Map.values() |> Enum.map(& &1.div_by) |> Enum.product()
 
-    items = Enum.map(val.items, &P2.factors_map/1)
-
-    {key,
-     Map.merge(val, %{
-       items: items,
-       change: change
-     })}
-  end)
-
-# P2.run(data)
-Enum.reduce(1..2, data, fn _, data -> P2.run(data) end)
+Enum.reduce(1..10000, data, fn _, data -> P2.run(data, div_product) end)
 |> Map.values()
-
-# |> Enum.map(& &1.count)
-# |> Enum.sort()
-# |> Enum.take(-2)
-# |> Enum.product()
+|> Enum.map(& &1.count)
+|> Enum.sort()
+|> Enum.take(-2)
+|> Enum.product()
 ```
