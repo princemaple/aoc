@@ -1,0 +1,238 @@
+# AoC 2022 Day 11
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data =
+  split(text, "\n\n")
+  |> Enum.map(fn chunk ->
+    Regex.run(
+      ~r/Monkey (\d+):\s+Starting items: ([\d, ]+)\s+Operation: (.+)\n\s+Test: divisible by (\d+)\n\s+If true: throw to monkey (\d+)\n\s+If false: throw to monkey (\d+)/,
+      chunk
+    )
+    |> then(fn [_, id, starting, change, div_by, true_to, false_to] ->
+      id = String.to_integer(id)
+      starting = starting |> String.split(", ") |> to_numbers()
+      div_by = String.to_integer(div_by)
+      true_to = String.to_integer(true_to)
+      false_to = String.to_integer(false_to)
+
+      {id,
+       %{
+         items: starting,
+         change: change,
+         div_by: div_by,
+         true_to: true_to,
+         false_to: false_to,
+         count: 0
+       }}
+    end)
+  end)
+  |> Map.new()
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def run(data) do
+    Enum.reduce(0..(map_size(data) - 1), data, fn id, data ->
+      %{
+        items: items,
+        change: change,
+        div_by: div_by,
+        true_to: true_to,
+        false_to: false_to
+      } = data[id]
+
+      data = update_in(data, [id, :count], &(&1 + length(items)))
+
+      items =
+        Enum.map(items, fn item ->
+          {new, _} = Code.eval_string(change, old: item)
+          div(new, 3)
+        end)
+
+      data =
+        Enum.reduce(items, data, fn item, data ->
+          if rem(item, div_by) == 0 do
+            update_in(data, [true_to, :items], &(&1 ++ [item]))
+          else
+            update_in(data, [false_to, :items], &(&1 ++ [item]))
+          end
+        end)
+
+      update_in(data, [id, :items], fn _ -> [] end)
+    end)
+  end
+end
+
+Enum.reduce(1..20, data, fn _, data -> P1.run(data) end)
+|> Map.values()
+|> Enum.map(& &1.count)
+|> Enum.sort()
+|> Enum.take(-2)
+|> Enum.product()
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  @primes [
+    2,
+    3,
+    5,
+    7,
+    11,
+    13,
+    17,
+    19,
+    23,
+    29,
+    31,
+    37,
+    41,
+    43,
+    47,
+    53,
+    59,
+    61,
+    67,
+    71,
+    73,
+    79,
+    83,
+    89,
+    97
+  ]
+  def run(data) do
+    Enum.reduce(0..(map_size(data) - 1), data, fn id, data ->
+      %{
+        items: items,
+        change: change,
+        div_by: div_by,
+        true_to: true_to,
+        false_to: false_to
+      } = data[id]
+
+      data = update_in(data, [id, :count], &(&1 + length(items)))
+
+      items =
+        Enum.map(items, fn item ->
+          case change do
+            {:+, _, [{:old, _, _}, n]} ->
+              %{item | const: item.const + n}
+
+            {:*, _, [{:old, _, _}, {:old, _, _}]} ->
+              item = Map.new(item, fn {key, val} -> {key, val + val} end)
+              factors_map(item.const)
+
+            {:*, _, [{:old, _, _}, n]} ->
+              Map.update(item, n, 1, &(&1 + 1))
+          end
+        end)
+
+      data =
+        Enum.reduce(items, data, fn item, data ->
+          if rem(item.const, div_by) == 0 && (Map.get(item, div_by, 0) > 0 || map_size(item) == 1) do
+            update_in(data, [true_to, :items], &[item | &1])
+          else
+            update_in(data, [false_to, :items], &[item | &1])
+          end
+        end)
+
+      update_in(data, [id, :items], fn _ -> [] end)
+    end)
+  end
+
+  def factors_map(item) do
+    {factors, remainder} = P2.factors(item, @primes, [])
+
+    factors
+    |> Enum.frequencies()
+    |> Map.put(:const, remainder)
+  end
+
+  def factors(1, _, acc), do: {acc, 0}
+  def factors(n, [], acc), do: {acc, n}
+
+  def factors(n, [p | ps], acc) do
+    if rem(n, p) == 0 do
+      factors(div(n, p), [p | ps], [p | acc])
+    else
+      factors(n, ps, acc)
+    end
+  end
+end
+
+data =
+  data
+  |> Map.new(fn {key, val} ->
+    {:ok, {:=, _, [{:new, _, nil}, change]}} = Code.string_to_quoted(val.change)
+
+    items = Enum.map(val.items, &P2.factors_map/1)
+
+    {key,
+     Map.merge(val, %{
+       items: items,
+       change: change
+     })}
+  end)
+
+# P2.run(data)
+Enum.reduce(1..2, data, fn _, data -> P2.run(data) end)
+|> Map.values()
+
+# |> Enum.map(& &1.count)
+# |> Enum.sort()
+# |> Enum.take(-2)
+# |> Enum.product()
+```
