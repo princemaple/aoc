@@ -72,7 +72,7 @@ paths =
     Enum.reduce(neighbours.(pos), set, fn npos, set ->
       nel = Map.get(map, npos, -1)
 
-      if nel - el <= 1 or (el in [?a - 1, ?z + 1] and nel > 0) do
+      if nel - el <= 1 do
         MapSet.put(set, {pos, npos})
       else
         set
