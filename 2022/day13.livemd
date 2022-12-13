@@ -1,0 +1,127 @@
+# AoC 2022 Day 13
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data =
+  split_all_lines(text, "\n")
+  |> List.flatten()
+  |> Enum.map(&(&1 |> Code.eval_string() |> elem(0)))
+  |> Enum.chunk_every(2)
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def compare([h1 | l1], [h2 | l2]) when is_integer(h1) and is_integer(h2) do
+    cond do
+      h1 < h2 -> :lt
+      h1 > h2 -> :gt
+      true -> compare(l1, l2)
+    end
+  end
+
+  def compare([h1 | l1], [h2 | l2]) when is_list(h1) and is_list(h2) do
+    if (comp = compare(h1, h2)) == :eq do
+      compare(l1, l2)
+    else
+      comp
+    end
+  end
+
+  def compare([], [_ | _]) do
+    :lt
+  end
+
+  def compare([_ | _], []) do
+    :gt
+  end
+
+  def compare([], []) do
+    :eq
+  end
+
+  def compare([h1 | l1], [h2 | l2])
+      when is_list(h1) and is_integer(h2) do
+    compare([h1 | l1], [[h2] | l2])
+  end
+
+  def compare([h1 | l1], [h2 | l2])
+      when is_integer(h1) and is_list(h2) do
+    compare([[h1] | l1], [h2 | l2])
+  end
+end
+
+for {[left, right], index} <- Enum.with_index(data, 1), P1.compare(left, right) == :lt do
+  index
+end
+|> Enum.sum()
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def sort(list) do
+    Enum.sort(list, P1)
+  end
+end
+
+a = [[2]]
+b = [[6]]
+sorted = [a, b | Enum.flat_map(data, & &1)] |> P2.sort()
+
+[
+  Enum.find_index(sorted, fn v -> v == a end) + 1,
+  Enum.find_index(sorted, fn v -> v == b end) + 1
+]
+|> Enum.product()
+```
