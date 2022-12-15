@@ -1,0 +1,131 @@
+# AoC 2018 Day 23
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data =
+  split(text, "\n")
+  |> Enum.map(fn line -> Regex.scan(~r/-?\d+/, line) end)
+  |> List.flatten()
+  |> to_numbers()
+  |> Enum.chunk_every(4)
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def solve(data) do
+    [x, y, z, r] = Enum.max_by(data, &List.last/1)
+
+    data
+    |> Enum.map(&Enum.drop(&1, -1))
+    |> Enum.filter(&(dis(&1, [x, y, z]) <= r))
+    |> Enum.count()
+  end
+
+  def dis(a, b) do
+    Enum.zip_with(a, b, fn l, r -> abs(l - r) end) |> Enum.sum()
+  end
+end
+
+P1.solve(data)
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(data) do
+    data =
+      Enum.map(data, fn [x, y, z, r] ->
+        %{x: (x - r)..(x + r), y: (y - r)..(y + r), z: (z - r)..(z + r), r: r, p: [x, y, z]}
+      end)
+
+    overlaps =
+      data
+      |> Enum.map(&overlaps(data, &1))
+
+    {_, max} =
+      overlaps
+      |> Enum.max_by(&elem(&1, 1))
+
+    overlaps
+    |> Enum.filter(&(elem(&1, 1) == max))
+    |> Enum.map(fn {bot, _} ->
+      diff = P1.dis(bot.p, [bot.x.first, bot.y.first, bot.z.first])
+      {Enum.sum([diff - bot.r, bot.x.first, bot.y.first, bot.z.first]), bot}
+    end)
+    |> Enum.max()
+  end
+
+  def overlaps(data, bot) do
+    Enum.reduce(data, {bot, 0}, fn
+      %{x: x2, y: y2, z: z2, r: r2, p: p2}, {%{x: x1, y: y1, z: z1, r: r1, p: p1} = bot, count} ->
+        if P1.dis(p1, p2) > r1 + r2 do
+          {bot, count}
+        else
+          [x, y, z] =
+            Enum.zip_with([x1, y1, z1], [x2, y2, z2], fn as..ae, bs..be ->
+              max(as, bs)..min(ae, be)//1
+            end)
+
+          if Enum.all?([x, y, z], &(Range.size(&1) > 0)) do
+            {%{x: x, y: y, z: z, r: r1, p: p1}, count + 1}
+          else
+            {bot, count}
+          end
+        end
+    end)
+  end
+end
+
+P2.solve(data)
+```
