@@ -1,0 +1,130 @@
+# AoC 2022 Day 15
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data =
+  split(text, "\n")
+  |> Enum.map(fn line -> Regex.scan(~r/-?\d+/, line) end)
+  |> List.flatten()
+  |> to_numbers()
+  |> Enum.chunk_every(2)
+  |> Enum.chunk_every(2)
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def prep(data, y) do
+    for [[sx, sy], [bx, by]] <- data do
+      distance = dis(sx, sy, bx, by)
+
+      if (diff = dis(sx, y, sx, sy)) > distance do
+        nil
+      else
+        ddiff = abs(diff - distance)
+        (sx - ddiff)..(sx + ddiff)
+      end
+    end
+    |> Enum.reject(&is_nil/1)
+    |> Enum.reduce([], &fuse(&2, &1))
+    |> then(fn [h | t] -> fuse(t, h) end)
+  end
+
+  def solve(data, y) do
+    data
+    |> prep(y)
+    |> Enum.reduce(0, &(Range.size(&1) + &2))
+    |> Kernel.-(
+      data
+      |> Enum.map(fn [_, [_, by]] -> by end)
+      |> Enum.filter(&(&1 == y))
+      |> MapSet.new()
+      |> MapSet.size()
+    )
+  end
+
+  defp dis(x1, y1, x2, y2) do
+    abs(x1 - x2) + abs(y1 - y2)
+  end
+
+  defp fuse(list, s..e = r) do
+    {disjoint, intersected} = Enum.split_with(list, &Range.disjoint?(&1, r))
+
+    fused =
+      Enum.reduce(intersected, s..e, fn as..ae, s..e ->
+        min(as, s)..max(ae, e)
+      end)
+
+    [fused | disjoint]
+  end
+end
+
+P1.solve(data, 2_000_000)
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(data) do
+    {[_..x, _], y} =
+      Enum.find_value(1..4_000_000, fn n ->
+        r = P1.prep(data, n)
+        if(length(r) > 1, do: {r, n}, else: false)
+      end)
+
+    (x + 1) * 4_000_000 + y
+  end
+end
+
+P2.solve(data)
+```
