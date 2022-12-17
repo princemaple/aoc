@@ -1,0 +1,240 @@
+# AoC 2022 Day 17
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+moves =
+  split(text)
+  |> tap(&IO.inspect(length(&1)))
+  |> Stream.map(fn
+    ">" -> 1
+    "<" -> -1
+  end)
+
+rocks =
+  [
+    [{0, 0}, {1, 0}, {2, 0}, {3, 0}],
+    [{0, 1}, {1, 0}, {1, 1}, {2, 1}, {1, 2}],
+    [{0, 0}, {1, 0}, {2, 0}, {2, 1}, {2, 2}],
+    [{0, 0}, {0, 1}, {0, 2}, {0, 3}],
+    [{0, 0}, {0, 1}, {1, 0}, {1, 1}]
+  ]
+  |> Enum.with_index()
+  |> Map.new(fn {v, i} -> {i, v} end)
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def solve(rocks, moves, target, offset \\ 0) do
+    Enum.reduce_while(Stream.cycle(moves), {offset, nil, MapSet.new(), 0}, fn move, state ->
+      case move(rocks, state, move) do
+        {n, _, _, _} = state when n - offset > target ->
+          {:halt, state}
+
+        state ->
+          {:cont, state}
+      end
+    end)
+  end
+
+  def move(rocks, {n, nil, set, max}, m) do
+    move(
+      rocks,
+      {
+        n + 1,
+        Enum.map(rocks[rem(n, 5)], fn {x, y} -> {x + 2, y + max + 4} end),
+        set,
+        max
+      },
+      m
+    )
+  end
+
+  def move(_rocks, {n, rock, set, max}, m) do
+    edge =
+      case m do
+        1 -> 6
+        -1 -> 0
+      end
+
+    rock =
+      if Enum.any?(rock, fn {x, y} -> x == edge or {x + m, y} in set end) do
+        rock
+      else
+        Enum.map(rock, fn {x, y} -> {x + m, y} end)
+      end
+
+    if Enum.any?(rock, fn {x, y} -> y == 1 or {x, y - 1} in set end) do
+      rock_max = rock |> Enum.map(&elem(&1, 1)) |> Enum.max()
+
+      {n, nil, Enum.reduce(rock, set, &MapSet.put(&2, &1)),
+       if(rock_max > max, do: rock_max, else: max)}
+    else
+      {n, Enum.map(rock, fn {x, y} -> {x, y - 1} end), set, max}
+    end
+  end
+
+  def print({_, _, set, max}) do
+    for y <- max..0//-1 do
+      for x <- 0..6 do
+        IO.write(if({x, y} in set, do: "#", else: " "))
+      end
+
+      IO.puts("")
+    end
+
+    IO.puts("")
+  end
+end
+```
+
+```elixir
+{_, _, set, max} = P1.solve(rocks, moves, 2022)
+max
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(rocks, moves, target) do
+    tops = List.duplicate(0, 7) |> Enum.with_index() |> Map.new(fn {v, i} -> {i, v} end)
+
+    Enum.reduce_while(
+      moves |> Stream.with_index() |> Stream.cycle(),
+      {0, nil, MapSet.new(), 0, tops, %{}},
+      fn move, state ->
+        case move(rocks, state, move) do
+          state when elem(state, 0) > target ->
+            {:halt, state}
+
+          state ->
+            {:cont, state}
+        end
+      end
+    )
+  end
+
+  def move(rocks, {n, nil, set, max, tops, seen}, {m, mi}) do
+    ri = rem(n, 5)
+
+    key = {ri, mi, Enum.map(tops, fn {_i, h} -> max - h end)}
+    value = {n, max}
+
+    if is_map_key(seen, key), do: throw({seen[key], value})
+    seen = Map.put(seen, key, value)
+
+    move(
+      rocks,
+      {
+        n + 1,
+        Enum.map(rocks[ri], fn {x, y} -> {x + 2, y + max + 4} end),
+        set,
+        max,
+        tops,
+        seen
+      },
+      {m, mi}
+    )
+  end
+
+  def move(_rocks, {n, rock, set, max, tops, seen}, {m, _mi}) do
+    edge =
+      case m do
+        1 -> 6
+        -1 -> 0
+      end
+
+    rock =
+      if Enum.any?(rock, fn {x, y} -> x == edge or {x + m, y} in set end) do
+        rock
+      else
+        Enum.map(rock, fn {x, y} -> {x + m, y} end)
+      end
+
+    if Enum.any?(rock, fn {x, y} -> y == 1 or {x, y - 1} in set end) do
+      rock_tops =
+        rock
+        |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+        |> Enum.map(fn {x, ys} -> {x, Enum.max(ys)} end)
+
+      rock_max = rock_tops |> Enum.map(&elem(&1, 1)) |> Enum.max()
+
+      {n, nil, Enum.reduce(rock, set, &MapSet.put(&2, &1)),
+       if(rock_max > max, do: rock_max, else: max),
+       Enum.reduce(
+         rock_tops,
+         tops,
+         &Map.update!(&2, elem(&1, 0), fn top -> max(top, elem(&1, 1)) end)
+       ), seen}
+    else
+      {n, Enum.map(rock, fn {x, y} -> {x, y - 1} end), set, max, tops, seen}
+    end
+  end
+end
+```
+
+```elixir
+iters = 1_000_000_000_000
+
+try do
+  P2.solve(rocks, moves, 50000)
+catch
+  {{n1, max1}, {n2, max2}} ->
+    cycle = n2 - n1
+    diff = max2 - max1
+    cycle_count = div(iters - n1, cycle)
+
+    max1 + diff * cycle_count +
+      elem(P1.solve(rocks, moves, rem(iters - n1, cycle) + 1, n1 + cycle * cycle_count + 1), 3)
+end
+```
