@@ -104,12 +104,16 @@ defmodule P2 do
           neighbours =
             P1.neighbours(cube)
             |> Enum.filter(fn cube ->
-              cube |> Enum.all?(&(&1 >= -1 and &1 <= 22)) and cube not in air_set and
+              Enum.all?(cube, &(&1 >= -1 and &1 <= 22)) and
+                cube not in air_set and
                 cube not in lava_set
             end)
 
           {[cube],
-           {neighbours ++ cubes, Enum.reduce([cube | neighbours], air_set, &MapSet.put(&2, &1))}}
+           {
+             neighbours ++ cubes,
+             Enum.reduce([cube | neighbours], air_set, &MapSet.put(&2, &1))
+           }}
       end,
       fn _ -> nil end
     )
