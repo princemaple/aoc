@@ -1,0 +1,128 @@
+# AoC 2022 Day 18
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data = split_all_lines(text, ",") |> to_numbers()
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  @offsets [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+    [0, 0, -1]
+  ]
+
+  def solve(data) do
+    Enum.reduce(data, {MapSet.new(), 0}, fn cube, {set, count} ->
+      neighbours = neighbours(cube)
+
+      dc = Enum.count(neighbours, &(!(&1 in set)))
+
+      {MapSet.put(set, cube), count + dc - (6 - dc)}
+    end)
+  end
+
+  def neighbours(cube) do
+    Enum.map(@offsets, fn offset ->
+      Enum.zip_with(cube, offset, &Kernel.+/2)
+    end)
+  end
+end
+```
+
+```elixir
+{lava_set, count} = P1.solve(data)
+count
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(lava_set) do
+    Stream.resource(
+      fn -> {[[-1, -1, -1]], MapSet.new()} end,
+      fn
+        {[], air_set} ->
+          {:halt, air_set}
+
+        {[cube | cubes], air_set} ->
+          neighbours =
+            P1.neighbours(cube)
+            |> Enum.filter(fn cube ->
+              cube |> Enum.all?(&(&1 >= -1 and &1 <= 22)) and cube not in air_set and
+                cube not in lava_set
+            end)
+
+          {[cube],
+           {neighbours ++ cubes, Enum.reduce([cube | neighbours], air_set, &MapSet.put(&2, &1))}}
+      end,
+      fn _ -> nil end
+    )
+    |> Enum.reduce(0, fn cube, count ->
+      cube
+      |> P1.neighbours()
+      |> Enum.count(&(&1 in lava_set))
+      |> Kernel.+(count)
+    end)
+  end
+end
+```
+
+```elixir
+P2.solve(lava_set)
+```
