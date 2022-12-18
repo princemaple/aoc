@@ -95,27 +95,30 @@ count
 defmodule P2 do
   def solve(lava_set) do
     Stream.resource(
-      fn -> {[[-1, -1, -1]], MapSet.new()} end,
+      fn ->
+        start = [-1, -1, -1]
+        {[start], MapSet.new([start])}
+      end,
       fn
         {[], air_set} ->
           {:halt, air_set}
 
-        {[cube | cubes], air_set} ->
+        {[air_cube | air_todo], air_set} ->
           neighbours =
-            P1.neighbours(cube)
+            P1.neighbours(air_cube)
             |> Enum.filter(fn cube ->
               Enum.all?(cube, &(&1 >= -1 and &1 <= 22)) and
                 cube not in air_set and
                 cube not in lava_set
             end)
 
-          {[cube],
+          {[air_cube],
            {
-             neighbours ++ cubes,
-             Enum.reduce([cube | neighbours], air_set, &MapSet.put(&2, &1))
+             neighbours ++ air_todo,
+             Enum.reduce(neighbours, air_set, &MapSet.put(&2, &1))
            }}
       end,
-      fn _ -> nil end
+      fn _ -> IO.puts("╰(*°▽°*)╯") end
     )
     |> Enum.reduce(0, fn cube, count ->
       cube
