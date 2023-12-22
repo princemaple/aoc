@@ -1,0 +1,107 @@
+# AoC 2023 D01
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data = split(text, "\n")
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def solve(data) do
+    for line <- data do
+      Regex.scan(~r/\d/, line)
+    end
+    |> Enum.map(fn list ->
+      [m] = List.first(list)
+      [n] = List.last(list)
+      (m <> n) |> String.to_integer()
+    end)
+    |> Enum.sum()
+  end
+end
+
+# P1.solve(data)
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(data) do
+    for line <- data do
+      Regex.scan(~r/\d|one|two|three|four|five|six|seven|eight|nine/, line)
+    end
+    |> Enum.map(fn list ->
+      [m] = List.first(list)
+      [n] = List.last(list)
+      (to_num(m) <> to_num(n)) |> String.to_integer()
+    end)
+    |> Enum.sum()
+  end
+
+  defp to_num(n) do
+    case n do
+      "one" -> "1"
+      "two" -> "2"
+      "three" -> "3"
+      "four" -> "4"
+      "five" -> "5"
+      "six" -> "6"
+      "seven" -> "7"
+      "eight" -> "8"
+      "nine" -> "9"
+      n -> n
+    end
+  end
+end
+
+P2.solve(data)
+```
