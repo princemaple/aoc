@@ -1,0 +1,106 @@
+# AoC 2023 D02
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data =
+  split(text, "\n")
+  |> Enum.map(fn line ->
+    ["Game " <> id | sets] = split(line, [":", ";"])
+
+    {String.to_integer(id),
+     sets
+     |> Enum.map(fn set ->
+       set
+       |> split([" ", ","])
+       |> Enum.chunk_every(2)
+       |> Enum.map(fn [count, color] -> {color, String.to_integer(count)} end)
+       |> Map.new()
+     end)}
+  end)
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def solve(data) do
+    data
+    |> Enum.filter(fn {_id, sets} ->
+      Enum.all?(
+        sets,
+        &(Map.get(&1, "red", 0) <= 12 and Map.get(&1, "green", 0) <= 13 and
+            Map.get(&1, "blue", 0) <= 14)
+      )
+    end)
+    |> Enum.map(fn {id, _} -> id end)
+    |> Enum.sum()
+  end
+end
+
+P1.solve(data)
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(data) do
+    data
+    |> Enum.map(fn {_id, sets} ->
+      sets
+      |> Enum.reduce(&Map.merge(&1, &2, fn _k, v1, v2 -> max(v1, v2) end))
+      |> Map.values()
+      |> Enum.product()
+    end)
+    |> Enum.sum()
+  end
+end
+
+P2.solve(data)
+```
