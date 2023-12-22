@@ -1,0 +1,181 @@
+# AoC 2022 Day 19
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data =
+  split(text, "\n")
+  |> Enum.map(fn line ->
+    Regex.scan(~r/\d+/, line)
+  end)
+  |> to_numbers()
+  |> Enum.map(&List.flatten(&1))
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def solve(data, ticks \\ 24) do
+    blueprints = Map.new(data, &make_bom/1)
+
+    # for {id, boms} <- blueprints do
+    #   {id,
+    #    sim(boms, ticks, {
+    #      %{ore: 1, clay: 0, obsidian: 0, geode: 0},
+    #      %{ore: 0, clay: 0, obsidian: 0, geode: 0}
+    #    })}
+    # end
+
+    sim(blueprints[2], ticks, {
+      %{ore: 1, clay: 0, obsidian: 0, geode: 0},
+      %{ore: 0, clay: 0, obsidian: 0, geode: 0}
+    })
+  end
+
+  def sim(_, 0, {bots, %{geode: rg} = resources}) do
+    IO.inspect({resources, bots})
+    rg
+  end
+
+  def sim(boms, ticks, {bots, resources}) do
+    resource = pick(boms, bots, resources, :geode)
+
+    IO.inspect({ticks, resource, resources, bots})
+
+    if resource do
+      sim(boms, ticks - 1, produce(boms, bots, resources, resource))
+    else
+      resources = bump(resources, bots)
+      sim(boms, ticks - 1, {bots, resources})
+    end
+  end
+
+  def pick(boms, bots, resources, resource) do
+    if can_make?(resources, boms[resource]) do
+      resource
+    else
+      scores = [
+        {rate(boms[resource], bots, resources), resource}
+        | Enum.map(boms[resource], fn {r, _c} ->
+            {bots, resources} = produce(boms, bots, resources, r)
+            {rate(boms[resource], bots, resources), r}
+          end)
+      ]
+
+      # IO.inspect(scores)
+
+      scores = scores |> Enum.sort(&>=/2) |> Enum.uniq_by(&elem(&1, 1))
+
+      {_, max_r} = Enum.min(scores)
+
+      if max_r != resource do
+        pick(boms, bots, resources, max_r)
+      end
+    end
+  end
+
+  def rate(bom, bots, resources) do
+    bom
+    |> Enum.map(fn {r, c} -> dv(c - resources[r], bots[r]) end)
+    |> Enum.max()
+  end
+
+  def dv(_, 0), do: :infinity
+  def dv(a, b), do: a / b
+
+  def can_make?(resources, bom) do
+    Enum.all?(bom, fn {r, c} -> resources[r] >= c end)
+  end
+
+  def bump(resources, bots) do
+    Map.new(resources, fn {k, v} -> {k, v + bots[k]} end)
+  end
+
+  def consume(resources, bom) do
+    Enum.reduce(bom, resources, fn {r, c}, rs -> %{rs | r => rs[r] - c} end)
+  end
+
+  def produce(boms, bots, resources, resource) do
+    resources = consume(resources, boms[resource])
+    resources = bump(resources, bots)
+    bots = %{bots | resource => bots[resource] + 1}
+    {bots, resources}
+  end
+
+  def make_bom([
+        id,
+        ore_to_ore,
+        ore_to_clay,
+        ore_to_obsidian,
+        clay_to_obsidian,
+        ore_to_geode,
+        obsidian_to_geode
+      ]) do
+    {id,
+     %{
+       ore: %{ore: ore_to_ore},
+       clay: %{ore: ore_to_clay},
+       obsidian: %{ore: ore_to_obsidian, clay: clay_to_obsidian},
+       geode: %{ore: ore_to_geode, obsidian: obsidian_to_geode}
+     }}
+  end
+end
+```
+
+```elixir
+P1.solve(data, 24)
+```
+
+## P2
+
+```elixir
+
+```
