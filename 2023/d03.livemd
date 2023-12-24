@@ -1,0 +1,145 @@
+# AoC 2023 D03
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data = to_matrix(text)
+```
+
+```elixir
+defmodule Shared do
+  @nums ~w(0 1 2 3 4 5 6 7 8 9)
+  @not_symbol MapSet.new(["." | @nums])
+  @offsets for(row <- [-1, 0, 1], col <- [-1, 0, 1], do: {row, col}) -- [{0, 0}]
+
+  def the_nums, do: @nums
+  def not_symbol, do: @not_symbol
+
+  def take_nums(data, {row, col}, nums, seen_coords) do
+    Enum.reduce(@offsets, {nums, seen_coords}, fn {off_row, off_col}, {nums, seen_coords} ->
+      take_num(data, {row + off_row, col + off_col}, nums, seen_coords)
+    end)
+  end
+
+  defp take_num(data, {row, col}, nums, seen_coords) do
+    {queue, seen_coords} =
+      Enum.reduce_while(col..0//-1, {:queue.new(), seen_coords}, fn col, {queue, seen} ->
+        if (num = Map.get(data, {row, col})) in @nums and {row, col} not in seen do
+          {:cont, {:queue.in_r(num, queue), MapSet.put(seen, {row, col})}}
+        else
+          {:halt, {queue, seen}}
+        end
+      end)
+
+    {queue, seen_coords} =
+      if :queue.is_empty(queue) do
+        {queue, seen_coords}
+      else
+        Enum.reduce_while((col + 1)..999//1, {queue, seen_coords}, fn col, {queue, seen} ->
+          if (num = Map.get(data, {row, col})) in @nums and {row, col} not in seen do
+            {:cont, {:queue.in(num, queue), MapSet.put(seen, {row, col})}}
+          else
+            {:halt, {queue, seen}}
+          end
+        end)
+      end
+
+    if :queue.is_empty(queue) do
+      {nums, seen_coords}
+    else
+      {[queue |> :queue.to_list() |> Enum.join() |> String.to_integer() | nums], seen_coords}
+    end
+  end
+end
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def solve(data) do
+    {nums, _} =
+      Enum.reduce(data, {[], MapSet.new()}, fn {coord, char}, {nums, seen_coords} ->
+        if char in Shared.not_symbol() do
+          {nums, seen_coords}
+        else
+          Shared.take_nums(data, coord, nums, seen_coords)
+        end
+      end)
+
+    Enum.sum(nums)
+  end
+end
+
+P1.solve(data)
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(data) do
+    data
+    |> Enum.map(fn {coord, char} ->
+      {nums, _} =
+        if char in Shared.not_symbol() do
+          {[], MapSet.new()}
+        else
+          Shared.take_nums(data, coord, [], MapSet.new())
+        end
+
+      nums
+    end)
+    |> Enum.filter(&match?([_, _], &1))
+    |> Enum.map(fn [a, b] -> a * b end)
+    |> Enum.sum()
+  end
+end
+
+P2.solve(data)
+```
