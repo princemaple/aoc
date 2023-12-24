@@ -1,0 +1,114 @@
+# AoC 2023 D04
+
+```elixir
+Mix.install([:kino])
+
+defmodule Utils do
+  def split(line, sep \\ "") do
+    String.split(line, sep, trim: true)
+  end
+
+  def split_all_lines(text, sep \\ "") do
+    text
+    |> String.split("\n", trim: true)
+    |> Enum.map(&split(&1, sep))
+  end
+
+  def to_numbers(number) when is_binary(number) do
+    String.to_integer(number)
+  end
+
+  def to_numbers(numbers) when is_list(numbers) do
+    Enum.map(numbers, &to_numbers/1)
+  end
+
+  def to_matrix(text, sep \\ "") do
+    text
+    |> split_all_lines(sep)
+    |> then(fn data ->
+      for {row, r} <- Enum.with_index(data), {col, c} <- Enum.with_index(row) do
+        {{r, c}, col}
+      end
+    end)
+    |> Map.new()
+  end
+end
+```
+
+## Setup
+
+```elixir
+import Utils
+
+input = Kino.Input.textarea("Input:")
+```
+
+```elixir
+text = Kino.Input.read(input)
+```
+
+```elixir
+data =
+  split(text, ["\n", "|"])
+  |> Enum.map(fn line ->
+    line
+    |> String.replace(~r/Card\s+\d+:/, "")
+    |> then(fn line -> Regex.scan(~r/\d+/, line) end)
+    |> List.flatten()
+    |> Enum.map(&String.to_integer/1)
+  end)
+  |> Enum.chunk_every(2)
+```
+
+```elixir
+List.last(data)
+```
+
+## P1
+
+```elixir
+defmodule P1 do
+  def solve(data) do
+    data
+    |> winning_count()
+    |> Enum.map(&floor(2 ** (&1 - 1)))
+    |> Enum.sum()
+  end
+
+  def winning_count(data) do
+    data
+    |> Enum.map(fn [winnings, nums] ->
+      diff = nums -- winnings
+      length(nums -- diff)
+    end)
+  end
+end
+
+P1.solve(data)
+```
+
+## P2
+
+```elixir
+defmodule P2 do
+  def solve(data) do
+    data =
+      data
+      |> P1.winning_count()
+      |> Enum.with_index(1)
+
+    data
+    |> Enum.reduce(Map.new(1..length(data), &{&1, 1}), fn {wc, k}, counter ->
+      increment = counter[k]
+
+      Enum.reduce((k + 1)..(k + wc)//1, counter, fn k, counter ->
+        Map.update!(counter, k, &(&1 + increment))
+      end)
+    end)
+    |> Map.values()
+    |> Enum.sum()
+  end
+end
+
+P2.solve(data)
+```
